@@ -134,23 +134,6 @@ async function trainingFlow() {
           if (value.length === 0) return 'RAM amount is required!';
         },
       });
-
-      // Calculate training price based on the selected GPU instance and duration
-      const gpuPrices = {
-        a100: 10,
-        a6000: 8,
-        rtx4090: 6,
-        h100: 15,
-      };
-      const duration = await p.text({
-        message: 'Enter the estimated training duration in hours:',
-        placeholder: '10',
-        validate: (value) => {
-          if (!/^\d+(\.\d+)?$/.test(value)) return 'Invalid input! Please enter a positive number.';
-          if (Number(value) <= 0) return 'Duration must be greater than 0!';
-        },
-      });
-      trainingPrice = gpuPrices[gpuInstance] * Number(duration);
     }
 
     // Display a summary of the selected options and the estimated price
@@ -165,16 +148,15 @@ async function trainingFlow() {
       console.log('- Epochs:', color.yellow(epochs));
       console.log('  - GPU type:', color.magenta(gpuType));
       console.log('  - Minimum VRAM:', color.magenta(vram || 'Not specified'));
+      console.log('Estimated training price: ' + color.green('$' + trainingPrice.toFixed(12)));
     } else if (resourceRequirements === 'gpu') {
       console.log('  - GPU instance:', color.magenta(gpuInstance));
       console.log('  - CPU cores:', color.magenta(cpuCores));
       console.log('  - RAM:', color.magenta(ram));
-      console.log('  - Estimated duration (hours):', color.magenta(duration));
     }
-    console.log('Estimated training price: ' + color.green('$' + trainingPrice.toFixed(12)));
 
     const confirmOptions = await p.select({
-      message: 'Review the options and price. Do you want to:',
+      message: 'Review the options and proceed:',
       options: [
         { value: 'proceed', label: 'Proceed' },
         { value: 'editDistributed', label: 'Edit distributed training options' },
@@ -191,9 +173,12 @@ async function trainingFlow() {
     }
   }
 
-  // Start the training job
-  // Implement the logic to start the training job here
-  p.outro(`${color.bgMagenta(color.black(' Training job started! '))}`);
+  // Start the training job or boot the instance
+  if (resourceRequirements === 'distributed') {
+    p.outro(`${color.bgMagenta(color.black(' Training job started! '))}`);
+  } else if (resourceRequirements === 'gpu') {
+    p.outro(`${color.bgMagenta(color.black(' GPU instance booting... '))}`);
+  }
 }
 
 async function deploymentFlow() {
